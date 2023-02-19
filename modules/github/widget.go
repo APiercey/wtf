@@ -2,11 +2,11 @@ package github
 
 import (
 	"strconv"
-	"strings"
 
 	"github.com/rivo/tview"
 	"github.com/wtfutil/wtf/utils"
 	"github.com/wtfutil/wtf/view"
+	ghb "github.com/google/go-github/v32/github"
 )
 
 // Widget define wtf widget to register widget later
@@ -14,7 +14,9 @@ type Widget struct {
 	view.MultiSourceWidget
 	view.TextWidget
 
-	GithubRepos []*Repo
+	Client *ghb.Client
+	PullRequests []*ghb.PullRequest
+	ReviewRequests []*ghb.PullRequest
 
 	settings *Settings
 	Selected int
@@ -31,8 +33,6 @@ func NewWidget(tviewApp *tview.Application, redrawChan chan bool, pages *tview.P
 		settings: settings,
 	}
 
-	widget.GithubRepos = widget.buildRepoCollection(widget.settings.repositories)
-
 	widget.initializeKeyboardControls()
 
 	widget.View.SetRegions(true)
@@ -41,6 +41,20 @@ func NewWidget(tviewApp *tview.Application, redrawChan chan bool, pages *tview.P
 	widget.Unselect()
 
 	widget.Sources = widget.settings.repositories
+
+	client, err := NewGithubClient(
+									widget.settings.apiKey,
+									widget.settings.baseURL,
+									widget.settings.uploadURL,
+								).githubClient()
+
+	if err != nil {
+		panic("Could not init GH Client")
+	}
+
+	widget.Client = client
+
+	widget.reloadData()
 
 	return &widget
 }
@@ -94,75 +108,24 @@ func (widget *Widget) Unselect() {
 
 // Refresh reloads the github data via the Github API and reruns the display
 func (widget *Widget) Refresh() {
-	for _, repo := range widget.GithubRepos {
-		repo.Refresh()
-	}
+	widget.reloadData()
 
 	widget.display()
 }
 
+func (widget *Widget) reloadData() {
+	prs ,_ := loadPullRequests(widget.Client, widget.settings.username)
+	reviews ,_ := loadReviewRequests(widget.Client, widget.settings.username)
+
+	widget.SetItemCount(len(prs) + len(reviews))
+	widget.PullRequests = prs
+	widget.ReviewRequests = reviews
+}
+
 /* -------------------- Unexported Functions -------------------- */
 
-func (widget *Widget) buildRepoCollection(repoData []string) []*Repo {
-	githubRepos := []*Repo{}
-
-	for _, repo := range repoData {
-		split := strings.Split(repo, "/")
-		owner, name := split[0], split[1]
-		repo := NewGithubRepo(
-			name,
-			owner,
-			widget.settings.apiKey,
-			widget.settings.baseURL,
-			widget.settings.uploadURL,
-		)
-
-		githubRepos = append(githubRepos, repo)
-	}
-
-	return githubRepos
-}
-
-func (widget *Widget) currentGithubRepo() *Repo {
-	if len(widget.GithubRepos) == 0 {
-		return nil
-	}
-
-	if widget.Idx < 0 || widget.Idx >= len(widget.GithubRepos) {
-		return nil
-	}
-
-	return widget.GithubRepos[widget.Idx]
-}
-
 func (widget *Widget) openPr() {
-	currentSelection := widget.View.GetHighlights()
-	if widget.Selected >= 0 && len(widget.Items) > 0 && currentSelection[0] != "" {
-		url := (*widget.currentGithubRepo().RemoteRepo.HTMLURL + "/pull/" + strconv.Itoa(widget.Items[widget.Selected]))
-		utils.OpenFile(url)
-	}
-}
-
-func (widget *Widget) openRepo() {
-	repo := widget.currentGithubRepo()
-
-	if repo != nil {
-		repo.Open()
-	}
-}
-
-func (widget *Widget) openPulls() {
-	repo := widget.currentGithubRepo()
-
-	if repo != nil {
-		repo.OpenPulls()
-	}
-}
-
-func (widget *Widget) openIssues() {
-	repo := widget.currentGithubRepo()
-
-	if repo != nil {
-		repo.OpenIssues()
+	if widget.Selected >= 0 && len(widget.Items) > 0 {
+		utils.OpenFile(*widget.PullRequests[widget.Selected].HTMLURL)
 	}
 }
