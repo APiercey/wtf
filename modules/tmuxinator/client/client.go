@@ -4,30 +4,15 @@ import (
 	"os/exec"
 	"fmt"
 	"strings"
+	"github.com/wtfutil/wtf/utils"
 )
 
 func ProjectList() []string {
-	stdout, err := exec.Command("tmuxinator", "list").Output()
+	cmdString := `tmuxinator list | grep -v "tmuxinator projects:" | tr -s ' ' | tr '\n' ' '`
 
-	if err != nil {
-			fmt.Println(err.Error())
-			return []string{}
-	}
+	cmd := exec.Command("sh", "-c", cmdString)
 
-	output := strings.Split(string(stdout), ":")
-	projectList := strings.Split(output[1], " ")
-	
-	var cleanProjectList []string
-
-	for _, str := range projectList {
-		cleanString := strings.ReplaceAll(str, "\n", "")
-
-		if cleanString != "" {
-			cleanProjectList = append(cleanProjectList, cleanString)
-		}
-	}
-
-	return cleanProjectList
+	return strings.Split(utils.ExecuteCommand(cmd), " ")
 }
 
 func StartProject(projectName string) {
