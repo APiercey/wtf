@@ -13,6 +13,7 @@ type GithubClient struct {
 	apiKey    string
 	baseURL   string
 	uploadURL string
+	client    *ghb.Client
 }
 
 func NewGithubClient(apiKey, baseURL, uploadURL string) *GithubClient {
@@ -21,6 +22,16 @@ func NewGithubClient(apiKey, baseURL, uploadURL string) *GithubClient {
 		baseURL:   baseURL,
 		uploadURL: uploadURL,
 	}
+}
+
+func (client *GithubClient) InitClient() {
+	maybeClient, err := client.githubClient()
+
+	if err != nil {
+		panic(err.Error())
+	}
+
+	client.client = maybeClient
 }
 
 /* -------------------- Unexported Functions -------------------- */

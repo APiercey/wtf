@@ -2,7 +2,9 @@ package github
 
 import (
 	"context"
+	"strings"
 	"fmt"
+	"strconv"
 
 	ghb "github.com/google/go-github/v32/github"
 )
@@ -16,7 +18,7 @@ func loadPullRequests(github *ghb.Client, username string) ([]*ghb.PullRequest, 
 		return []*ghb.PullRequest{}, err
 	}
 
-	return issuesToPullRequests(issues), nil
+	return issuesToPullRequests(github, issues), nil
 }
 
 func loadReviewRequests(github *ghb.Client, username string) ([]*ghb.PullRequest, error) {
@@ -28,7 +30,7 @@ func loadReviewRequests(github *ghb.Client, username string) ([]*ghb.PullRequest
 		return []*ghb.PullRequest{}, err
 	}
 
-	return issuesToPullRequests(issues), nil
+	return issuesToPullRequests(github, issues), nil
 }
 
 func searchIssues(client *ghb.Client, query string) ([]*ghb.Issue, error) {
@@ -44,15 +46,40 @@ func searchIssues(client *ghb.Client, query string) ([]*ghb.Issue, error) {
 	return results.Issues, nil
 }
 
-func issuesToPullRequests(issues []*ghb.Issue) []*ghb.PullRequest {
+func issuesToPullRequests(github *ghb.Client, issues []*ghb.Issue) []*ghb.PullRequest {
 	prs := []*ghb.PullRequest{}
 
 	for _, issue := range issues {
+
 		if issue.IsPullRequest() {
-			pr := ghb.PullRequest{ID: issue.ID, Number: issue.Number, Title: issue.Title, HTMLURL: issue.HTMLURL, MergeableState: nil}
-			prs = append(prs, &pr)
+			ownerName, repoName, prNumber := pullRequestInfo(issue)
+
+			pr, _, err := github.PullRequests.Get(
+				context.Background(),
+				ownerName,
+				repoName,
+				prNumber,
+			)
+
+			if err == nil {
+				prs = append(prs, pr)
+			}
 		}
 	}
 
 	return prs
+}
+
+func pullRequestInfo(issue *ghb.Issue) (ownerName string, repoName string, number int) {
+	data := strings.Split(issue.PullRequestLinks.GetURL(), "repos")
+	data = strings.Split(data[1], "/")
+
+	pullRequestNumber, err := strconv.Atoi(data[4])
+
+	if err != nil {
+		fmt.Println("Error during conversion")
+		return
+	}
+
+	return data[1], data[2], pullRequestNumber
 }

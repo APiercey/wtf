@@ -42,11 +42,11 @@ func NewWidget(tviewApp *tview.Application, redrawChan chan bool, pages *tview.P
 
 	widget.Sources = widget.settings.repositories
 
-	client, err := NewGithubClient(
+	client := NewGithubClient(
 									widget.settings.apiKey,
 									widget.settings.baseURL,
 									widget.settings.uploadURL,
-								).githubClient()
+								)
 
 	if err != nil {
 		panic("Could not init GH Client")
