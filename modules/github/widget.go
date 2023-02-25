@@ -6,6 +6,7 @@ import (
 	"github.com/rivo/tview"
 	"github.com/wtfutil/wtf/utils"
 	"github.com/wtfutil/wtf/view"
+	"github.com/wtfutil/wtf/modules/github/client"
 	ghb "github.com/google/go-github/v32/github"
 )
 
@@ -14,7 +15,7 @@ type Widget struct {
 	view.MultiSourceWidget
 	view.TextWidget
 
-	Client *ghb.Client
+	Client client.GithubClient
 	PullRequests []*ghb.PullRequest
 	ReviewRequests []*ghb.PullRequest
 
@@ -42,17 +43,11 @@ func NewWidget(tviewApp *tview.Application, redrawChan chan bool, pages *tview.P
 
 	widget.Sources = widget.settings.repositories
 
-	client := NewGithubClient(
-									widget.settings.apiKey,
-									widget.settings.baseURL,
-									widget.settings.uploadURL,
-								)
-
-	if err != nil {
-		panic("Could not init GH Client")
-	}
-
-	widget.Client = client
+	widget.Client = client.NewGithubClient(
+		widget.settings.apiKey,
+		widget.settings.baseURL,
+		widget.settings.uploadURL,
+	)
 
 	widget.reloadData()
 
@@ -114,8 +109,8 @@ func (widget *Widget) Refresh() {
 }
 
 func (widget *Widget) reloadData() {
-	prs ,_ := loadPullRequests(widget.Client, widget.settings.username)
-	reviews ,_ := loadReviewRequests(widget.Client, widget.settings.username)
+	prs ,_ := widget.Client.LoadPullRequests(widget.settings.username)
+	reviews ,_ := widget.Client.LoadReviewRequests(widget.settings.username)
 
 	widget.SetItemCount(len(prs) + len(reviews))
 	widget.PullRequests = prs
