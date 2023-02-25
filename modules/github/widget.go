@@ -7,7 +7,6 @@ import (
 	"github.com/wtfutil/wtf/utils"
 	"github.com/wtfutil/wtf/view"
 	"github.com/wtfutil/wtf/modules/github/client"
-	ghb "github.com/google/go-github/v32/github"
 )
 
 // Widget define wtf widget to register widget later
@@ -16,8 +15,7 @@ type Widget struct {
 	view.TextWidget
 
 	Client client.GithubClient
-	PullRequests []*ghb.PullRequest
-	ReviewRequests []*ghb.PullRequest
+	PullRequests []Item
 
 	settings *Settings
 	Selected int
@@ -57,8 +55,8 @@ func NewWidget(tviewApp *tview.Application, redrawChan chan bool, pages *tview.P
 /* -------------------- Exported Functions -------------------- */
 
 // SetItemCount sets the amount of PRs RRs and other PRs throughout the widgets display creation
-func (widget *Widget) SetItemCount(items int) {
-	widget.maxItems = items
+func (widget *Widget) SetItemsCount(count int) {
+	widget.maxItems = count
 }
 
 // GetItemCount returns the amount of PRs RRs and other PRs calculated so far as an int
@@ -109,18 +107,34 @@ func (widget *Widget) Refresh() {
 }
 
 func (widget *Widget) reloadData() {
-	prs ,_ := widget.Client.LoadPullRequests(widget.settings.username)
-	reviews ,_ := widget.Client.LoadReviewRequests(widget.settings.username)
+	prs := []Item{}
+	items := []int{}
 
-	widget.SetItemCount(len(prs) + len(reviews))
+	reviewPrs ,_ := widget.Client.LoadReviewRequests(widget.settings.username)
+	authoredPrs ,_ := widget.Client.LoadPullRequests(widget.settings.username)
+
+	for idx, pr := range reviewPrs {
+		id := idx
+		prs = append(prs, Item{pr, ReviewRequested, id})
+		items = append(items, id)
+	}
+
+	offset := len(items) 
+	for idx, pr := range authoredPrs {
+		id := offset + idx
+		prs = append(prs, Item{pr, AuthoredPullRequest, id})
+		items = append(items, id)
+	}
+
+	widget.SetItemsCount(len(prs))
+	widget.Items = items
 	widget.PullRequests = prs
-	widget.ReviewRequests = reviews
 }
 
 /* -------------------- Unexported Functions -------------------- */
 
 func (widget *Widget) openPr() {
 	if widget.Selected >= 0 && len(widget.Items) > 0 {
-		utils.OpenFile(*widget.PullRequests[widget.Selected].HTMLURL)
+		utils.OpenFile(*widget.PullRequests[widget.Selected].PullRequest.HTMLURL)
 	}
 }

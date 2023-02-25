@@ -36,30 +36,33 @@ func (widget *Widget) content() (string, string, bool) {
 }
 
 func (widget *Widget) displayMyPullRequests() string {
-	if widget.maxItems <= 0 {
+	if !anyAuthoriedRequests(widget.PullRequests) {
 		return " [grey]none[white]\n"
 	}
 
 	str := ""
-	for idx, pr := range widget.PullRequests {
-		str += fmt.Sprintf(` %s[green]["%d"]%4d[""][white] %s`, widget.mergeString(pr), idx, *pr.Number, *pr.Title)
-		str += "\n"
-		widget.Items = append(widget.Items, *pr.Number)
+	for _, pr := range widget.PullRequests {
+		if pr.ItemType == AuthoredPullRequest {
+			str += fmt.Sprintf(` %s[green]["%d"]%4d[""][white] %s`, widget.mergeString(pr.PullRequest), pr.ID, *pr.PullRequest.Number, *pr.PullRequest.Title)
+			str += "\n"
+		}
 	}
+
 
 	return str
 }
 
 func (widget *Widget) displayMyReviewRequests() string {
-	if len(widget.ReviewRequests) == 0 {
+	if !anyReviewRequests(widget.PullRequests) {
 		return " [grey]none[white]\n"
 	}
 
 	str := ""
-	for idx, pr := range widget.ReviewRequests {
-		str += fmt.Sprintf(` [green]["%d"]%4d[""][white] %s`, idx, *pr.Number, *pr.Title)
-		str += "\n"
-		widget.Items = append(widget.Items, *pr.Number)
+	for _, pr := range widget.PullRequests {
+		if pr.ItemType == ReviewRequested {
+			str += fmt.Sprintf(` %s[green]["%d"]%4d[""][white] %s`, widget.mergeString(pr.PullRequest), pr.ID, *pr.PullRequest.Number, *pr.PullRequest.Title)
+			str += "\n"
+		}
 	}
 
 	return str
