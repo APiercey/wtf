@@ -1,4 +1,4 @@
-package github
+package simple_github
 
 import (
 	ghb "github.com/google/go-github/v32/github"

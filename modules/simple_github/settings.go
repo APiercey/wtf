@@ -1,4 +1,4 @@
-package github
+package simple_github
 
 import (
 	"os"

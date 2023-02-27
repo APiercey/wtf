@@ -30,7 +30,7 @@ import (
 	"github.com/wtfutil/wtf/modules/gcal"
 	"github.com/wtfutil/wtf/modules/gerrit"
 	"github.com/wtfutil/wtf/modules/git"
-	"github.com/wtfutil/wtf/modules/github"
+	simple_github "github.com/wtfutil/wtf/modules/simple_github"
 	"github.com/wtfutil/wtf/modules/gitlab"
 	"github.com/wtfutil/wtf/modules/gitlabtodo"
 	"github.com/wtfutil/wtf/modules/gitter"
@@ -195,9 +195,12 @@ func MakeWidget(
 	case "git":
 		settings := git.NewSettingsFromYAML(moduleName, moduleConfig, config)
 		widget = git.NewWidget(tviewApp, redrawChan, pages, settings)
-	case "github":
-		settings := github.NewSettingsFromYAML(moduleName, moduleConfig, config)
-		widget = github.NewWidget(tviewApp, redrawChan, pages, settings)
+	// case "github":
+	// 	settings := github.NewSettingsFromYAML(moduleName, moduleConfig, config)
+	// 	widget = github.NewWidget(tviewApp, redrawChan, pages, settings)
+	case "simple_github":
+		settings := simple_github.NewSettingsFromYAML(moduleName, moduleConfig, config)
+		widget = simple_github.NewWidget(tviewApp, redrawChan, pages, settings)
 	case "gitlab":
 		settings := gitlab.NewSettingsFromYAML(moduleName, moduleConfig, config)
 		widget = gitlab.NewWidget(tviewApp, redrawChan, pages, settings)

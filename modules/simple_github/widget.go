@@ -1,4 +1,4 @@
-package github
+package simple_github
 
 import (
 	"strconv"
@@ -6,7 +6,7 @@ import (
 	"github.com/rivo/tview"
 	"github.com/wtfutil/wtf/utils"
 	"github.com/wtfutil/wtf/view"
-	"github.com/wtfutil/wtf/modules/github/client"
+	"github.com/wtfutil/wtf/modules/simple_github/client"
 )
 
 // Widget define wtf widget to register widget later
